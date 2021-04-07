@@ -1,7 +1,3 @@
-/**
- *Submitted for verification at BscScan.com on 2021-02-27
-*/
-
 pragma solidity ^0.4.26;
 
 contract SafeMath {
@@ -65,7 +61,6 @@ contract IERC20 {
 
 /**
 Contract function to receive approval and execute function in one call
-Borrowed from MiniMeToken
 */
 contract ApproveAndCallFallBack {
     function receiveApproval(
@@ -77,102 +72,84 @@ contract ApproveAndCallFallBack {
 }
 
 contract SmaugPublicSale {
-    address public manager; // ***BNB's destination address***
+    address public manager; // Manager address
 
-    bool public active; // ***Active ?***
+    bool public active; // Active
 
-    mapping(address => uint256) public investorsDepositedBNB; // ***All investors and their BNB deposits***
+    mapping(address => uint256) public investorsDepositedBNB; // Investors and their BNB deposits
 
-    mapping(address => uint256) public investorsDepositedSMAUG; // *** SMAUG equivalent of all investors and BNB deposits ***
+    mapping(address => uint256) public investorsDepositedSMAUG; // SMAUG deposits
 
     mapping(address => bool) public isInvested;
 
-    address[] public allInvestors; // ***All investors***
+    address[] public allInvestors; // All investors
 
-    uint256 public totalInvestmentSMAUG; // ***Total purchased SMAUG***
+    uint256 public totalInvestmentSMAUG; // Total purchased SMAUG
 
-    uint256 public totalInvestmentBNB; // ***Total BNB deposited***
+    uint256 public totalInvestmentBNB; // Total BNB deposited
 
     IERC20 public SmaugToken =
-        IERC20(0xaD5668bFd8274532555db78D84FC4a4D74A57b7D); // ***SmaugToken Contract***
+        IERC20(0x51220bE0De095b98E469D22066b70C0C55ffa507); // SmaugToken Contract
 
-    uint256 public SMAUGperBNB = 2333300000000; // 1 BNB = 23333 Smaug
+    uint256 public SMAUGperBNB = 1500000000000; // 1 BNB = 15000 Smaug
 
-    uint256 public maxBNB = 150000000000;  // ***Maximum BNB that can be deposited***
+    uint256 public maxBNB = 1600000000000000000000;  // 1600 Maximum BNB that can be deposited
                             
-    uint256 public maxSMAUG = 3500000000000000; // ***Maximum SMAUG that can be purchased***
+    uint256 public maxSMAUG = 2400000000000000; // Maximum SMAUG that can be purchased
 
     constructor() public {
-        manager = msg.sender; // ***Set Manager***
+        manager = msg.sender; // Set Manager
         active = false;
     }
 
     modifier isManager() {
-        require(manager == msg.sender); // ***The transferring address must match the manager address.***
+        require(manager == msg.sender); // Manager condition
         _;
     }
 
     function changeActive(bool _active) public isManager {
-        // ***Change Active***
+        // Change Active
         active = _active;
     }
 
     function buy() public payable returns (uint256) {
-        require(active); // ***If Active***
-        // ***Buy Tokens***
-        require(totalInvestmentBNB + msg.value <= maxBNB); // ***BNB sent and total BNB deposited cannot be greater than the maximum BNB amount***
-        require(
-            totalInvestmentSMAUG +
-                ((msg.value * SMAUGperBNB) / 100000000) <=
-                maxSMAUG
-        ); // ***The sum of SMAUG to be purchased and SMAUG to be purchased cannot be greater than the SMAUG to be sold.***
-        require(msg.value >= 10000000);
-                              // ***The BNB sent must be greater than 0.1 BNB.***
-        require(
-            investorsDepositedBNB[msg.sender] + msg.value <=
-                1000000000
-        ); // ***The sum of the deposited and sent amount must be less than 10 BNB***
+        require(active); // Public Sale Active
+        require(totalInvestmentBNB + msg.value <= maxBNB); // BNB sent and total BNB deposited cannot be greater than the maximum BNB amount
+        require(totalInvestmentSMAUG + ((msg.value  * SMAUGperBNB) / 1000000000000000000) <= maxSMAUG); // The sum of SMAUG to be purchased and SMAUG to be purchased cannot be greater than the SMAUG to be sold.
+        require(msg.value >= 100000000000000000);  // BNB sent must be greater than 0.1 BNB.
+        require(investorsDepositedBNB[msg.sender] + msg.value <= 15000000000000000000); // The sum of the deposited and sent amount must be less than 15 BNB
 
-        uint256 smaugamount = (msg.value * SMAUGperBNB) / 100000000; // ***Amount of SmaugToken to be sent***
 
-        investorsDepositedBNB[msg.sender] =
-            investorsDepositedBNB[msg.sender] +
-            msg.value; // ***Adding how many BNB the investor has deposited***
-        investorsDepositedSMAUG[msg.sender] =
-            investorsDepositedSMAUG[msg.sender] +
-            smaugamount; // ***Adding how many BNB equivalent SMAUG the investor has deposited***
+        uint256 smaugamount = (msg.value  * SMAUGperBNB) / 1000000000000000000; // Amount of SmaugToken to be sent
+
+        investorsDepositedBNB[msg.sender] = investorsDepositedBNB[msg.sender] + msg.value; // Add BNB to investorsDepositedBNB
+        investorsDepositedSMAUG[msg.sender] = investorsDepositedSMAUG[msg.sender] + smaugamount; // Add Smaug to investorsDepositedSMAUG
 
         if (isInvested[msg.sender]) {} else {
-            // ***If no investment has been made***
-            allInvestors.push(msg.sender); // ***Adding all investors***
-            isInvested[msg.sender] = true; // ***Set Invested***
+            // If no investment has been made
+            allInvestors.push(msg.sender); // Adding all investors
+            isInvested[msg.sender] = true; // Set Invested
         
         }
-        totalInvestmentBNB += msg.value; // ***Adding totalInvestmentBNB
-        totalInvestmentSMAUG += smaugamount; // ***Adding totalInvestmentSMAUG
+        totalInvestmentBNB += msg.value; // Adding totalInvestmentBNB
+        totalInvestmentSMAUG += smaugamount; // Adding totalInvestmentSMAUG
+        
+        SmaugToken.transfer( msg.sender,smaugamount); // Transfer Smaug token to Investor
 
-           
     }
 
-    function sendInvestorsTokens() public isManager {
-        // ***Distribution of SMAUG Token to investors.***
-        for (uint256 i = 0; i < allInvestors.length; i++) {
-             SmaugToken.transfer( allInvestors[i], investorsDepositedSMAUG[allInvestors[i]]);
-      
-        }
-    }
 
     function getAllInvestors() public view returns (address[]) {
         return allInvestors;
     }
 
     function getSMAUGTokenDeployer(uint256 amount) public isManager {
-        // ***Send SMAUGTOKEN to DEPLOYER***
+        // Send SMAUGTOKEN to DEPLOYER
         SmaugToken.transfer(msg.sender, amount);
     }
 
     function getBNB(uint256 amount) public isManager {
-        // ***Send BNB to manager
+        // Send BNB to manager
         manager.transfer(amount);
     }
 
